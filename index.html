@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>My Word App</title>
+<style>
+
+body{
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
+  background: linear-gradient(135deg,#eef2ff,#f8fafc);
+  margin:0;
+  padding:40px;
+  text-align:center;
+}
+
+h1{
+  font-size:32px;
+  margin-bottom:10px;
+  color:#1f2937;
+}
+
+#wordCount{
+  color:#6b7280;
+  margin-bottom:20px;
+}
+
+input{
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #d1d5db;
+  margin:5px;
+  width:140px;
+}
+
+button{
+  padding:8px 12px;
+  border-radius:8px;
+  border:none;
+  background:#6366f1;
+  color:white;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+button:hover{
+  background:#4f46e5;
+  transform:translateY(-1px);
+}
+
+ul{
+  list-style:none;
+  padding:0;
+  margin-top:30px;
+}
+
+li{
+  background:white;
+  margin:12px auto;
+  padding:14px;
+  width:320px;
+  border-radius:12px;
+  box-shadow:0 6px 15px rgba(0,0,0,0.08);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+span{
+  margin-right:6px;
+}
+
+</style>
+
+</head>
+<body>
+
+<h1>My Word App</h1>
+
+<p id="wordCount"></p>
+
+<input id="word" placeholder="英単語">
+<input id="meaning" placeholder="意味">
+
+<button onclick="addWord()">追加</button>
+
+<ul id="wordList"></ul>
+
+<script>
+
+let words = JSON.parse(localStorage.getItem("words")) || [];
+
+const list = document.getElementById("wordList");
+
+async function translateWord(word) {
+
+  const response = await fetch("https://translate.argosopentech.com/translate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      q: word,
+      source: "en",
+      target: "ja",
+      format: "text"
+    })
+  });
+
+  const data = await response.json();
+  return data.translatedText;
+
+}
+function renderWords() {
+
+  list.innerHTML = "";
+
+  words.forEach((item, index) => {
+
+    const li = document.createElement("li");
+
+    const wordText = document.createElement("span");
+    wordText.textContent = item.word + "   →   ";
+
+    const meaningText = document.createElement("span");
+    meaningText.textContent = item.meaning;
+
+    const showBtn = document.createElement("button");
+    showBtn.textContent = " Hide ";
+
+    showBtn.onclick = function() {
+     if (meaningText.textContent === item.meaning) {
+     meaningText.textContent = "???";
+     showBtn.textContent = " Show ";
+   } else {
+    meaningText.textContent = item.meaning;
+    showBtn.textContent = " Hide ";
+  }
+
+};  
+
+     const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = " ✖ ";
+
+    deleteBtn.onclick = function() {
+      deleteWord(index);
+    }
+
+    li.appendChild(wordText);
+    li.appendChild(meaningText);
+    li.appendChild(showBtn);
+    li.appendChild(deleteBtn);
+
+    list.appendChild(li);
+
+  });
+
+  document.getElementById("wordCount").textContent =
+  "Words saved: " + words.length;
+
+}
+
+
+async function addWord() {
+
+  const wordInput = document.getElementById("word");
+  const meaningInput = document.getElementById("meaning");
+
+  const word = wordInput.value;
+
+if (word === "") return; 
+
+  let meaning = meaningInput.value;
+
+if (meaning === "") {
+  meaning = await translateWord(word);
+}
+
+  words.push({
+    word: word,
+    meaning: meaning
+  });
+
+  localStorage.setItem("words", JSON.stringify(words));
+
+  renderWords();
+
+  wordInput.value = "";
+  meaningInput.value = "";
+
+  wordInput.focus();
+}
+
+function deleteWord(index) {
+
+  words.splice(index, 1);
+
+  localStorage.setItem("words", JSON.stringify(words));
+
+  renderWords();
+
+}
+
+renderWords();
+
+document.getElementById("meaning").addEventListener("keypress", function(event) {
+  if (event.key === "Enter") {
+    addWord();
+  }
+});
+
+</script>
+
+</body>
+</html>
